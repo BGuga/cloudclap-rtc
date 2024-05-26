@@ -13,7 +13,7 @@ app.get("/*", (_, res) => res.redirect("/"));
 const httpServer = http.createServer(app);
 const wsServer = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:3000",
     credentials: true,
   },
 });
