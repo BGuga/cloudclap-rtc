@@ -1,13 +1,17 @@
 import http from "http";
 import { Server } from "socket.io";
 import express from "express";
+import path from "path";
 
 const app = express();
 
-app.set("view engine", "pug");
-app.set("views", __dirname + "/views");
-app.use("/public", express.static(__dirname + "/public"));
-app.get("/", (_, res) => res.render("home"));
+// Set the static files location
+app.use("/public", express.static(path.join(__dirname, "public")));
+
+// Serve the HTML file
+app.get("/", (_, res) =>
+  res.sendFile(path.join(__dirname, "views", "home.html"))
+);
 app.get("/*", (_, res) => res.redirect("/"));
 
 const httpServer = http.createServer(app);

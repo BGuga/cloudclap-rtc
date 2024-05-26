@@ -65,6 +65,7 @@ socket.on("offer", async (offer) => {
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
     myDataChannel.addEventListener("message", (event) =>
+      // canvas draw
       console.log(event.data)
     );
   });
