@@ -1,4 +1,6 @@
-const socket = io();
+const socket = io("https://cloudclap.r-e.kr/", {
+  withCredentials: true,
+});
 
 const messageDiv = document.getElementById("message");
 const messageForm = messageDiv.querySelector("form");
