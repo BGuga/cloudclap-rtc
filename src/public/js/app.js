@@ -421,7 +421,6 @@ function onStartPainting(event) {
 function onStopPainting(event) {
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
-    data.coordinateInput(coords.x, coords.y);
     if (myDataChannel) {
       myDataChannel.send(data.exportStroke());
     }
