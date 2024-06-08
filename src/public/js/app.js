@@ -156,6 +156,7 @@ class GetStroke {
       context1.strokeStyle = this.strokeData.getColor();
       context1.lineWidth = this.strokeData.getWidth();
       context1.beginPath();
+
       if (this.strokeData.getLength() > 0) {
         let startCoordinate = this.strokeData.getCoordinate(0);
         context1.moveTo(startCoordinate[0], startCoordinate[1]);
@@ -177,6 +178,7 @@ class GetStroke {
       );
       context2.globalCompositeOperation = "source-over"; // 기본값으로 복원
       context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
+      console.log("finished");
     }
 
     if (this.strokeData.getType() == "erase") {
