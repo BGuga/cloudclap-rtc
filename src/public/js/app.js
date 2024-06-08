@@ -167,17 +167,17 @@ class GetStroke {
         }
       }
 
-    //   context2.globalCompositeOperation = "destination-over"; // 이미지가 뒤에 위치하도록 설정
-    //   context2.drawImage(
-    //     canvasToDraw,
-    //     0,
-    //     0,
-    //     canvasToDraw.width,
-    //     canvasToDraw.height
-    //   );
-    //   context2.globalCompositeOperation = "source-over"; // 기본값으로 복원
-    //   context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
-    // }
+      //   context2.globalCompositeOperation = "destination-over"; // 이미지가 뒤에 위치하도록 설정
+      //   context2.drawImage(
+      //     canvasToDraw,
+      //     0,
+      //     0,
+      //     canvasToDraw.width,
+      //     canvasToDraw.height
+      //   );
+      //   context2.globalCompositeOperation = "source-over"; // 기본값으로 복원
+      //   context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
+    }
 
     if (this.strokeData.getType() == "erase") {
       if (this.strokeData.getLength() > 0) {
