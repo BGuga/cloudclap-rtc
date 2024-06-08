@@ -6,27 +6,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Noom</title>
     <link rel="stylesheet" href="https://unpkg.com/mvp.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.min.js"></script>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      #canvas-container {
+        position: relative;
+        width: 100vw;
+        height: 100vh;
+      }
+      #canvas1,
+      #canvas2 {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+      #canvas1 {
+        background-color: rgb(172, 172, 172);
+      }
+      #canvas2 {
+        display: none;
+      }
+      .overlay {
+        position: absolute;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.7);
+        padding: 10px;
+        border-radius: 10px;
+      }
+    </style>
   </head>
   <body>
-    <header>
-      <h1>Noom</h1>
-    </header>
-    <main>
-      <div id="message">
-        <form>
-          <input placeholder="message" required type="text" />
-          <button>Send Message</button>
-        </form>
+    <div id="canvas-container">
+      <canvas id="canvas1"></canvas>
+      <canvas id="canvas2"></canvas>
+      <div class="overlay">
+        <div id="pdf-loader">
+          <input type="file" id="pdf-file" accept="application/pdf" />
+        </div>
+        <div id="welcome">
+          <form>
+            <input placeholder="room name" required type="text" />
+            <button>Enter room</button>
+          </form>
+        </div>
+        <div class="btns">
+          <span>Pencil Width</span>
+          <input type="range" id="linewidth" min="1" max="10" value="5" />
+          <button id="destroy-btn">Destroy</button>
+          <button id="erase-btn">Erase</button>
+          <button id="restore_btn">Restore</button>
+        </div>
+        <input type="color" id="lineColor" />
       </div>
-      <div id="welcome">
-        <form>
-          <input placeholder="room name" required type="text" />
-          <button>Enter room</button>
-        </form>
-      </div>
-    </main>
+    </div>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
-    <script type="module" src="/public/js/app.js"></script>
+    <script src="/public/js/app.js"></script>
   </body>
 </html>
