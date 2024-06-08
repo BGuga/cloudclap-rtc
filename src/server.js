@@ -9,9 +9,11 @@ const app = express();
 app.use("/public", express.static(path.join(__dirname, "public")));
 
 // Serve the HTML file
-app.get("/", (_, res) =>
-  res.sendFile(path.join(__dirname, "views", "home.html"))
+app.get(
+  "/",
+  (_, res) => res.render("home") // "home"라는 뷰를 렌더링하도록 변경
 );
+
 app.get("/*", (_, res) => res.redirect("/"));
 
 const httpServer = http.createServer(app);
