@@ -178,21 +178,19 @@ class GetStroke {
       context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
     }
 
-    if (this.strokeData.getType() == "erase") {
-      console.log("called erase");
-      if (this.strokeData.getLength() > 0) {
-        let startCoordinate = this.strokeData.getCoordinate(0);
-        context2.clearRect(
-          startCoordinate[0] - 5,
-          startCoordinate[1] - 5,
-          10,
-          10
-        );
+    console.log("called erase");
+    if (this.strokeData.getLength() > 0) {
+      let startCoordinate = this.strokeData.getCoordinate(0);
+      context2.clearRect(
+        startCoordinate[0] - 5,
+        startCoordinate[1] - 5,
+        10,
+        10
+      );
 
-        for (let i = 0; i < this.strokeData.getLength(); i++) {
-          var coordinate = this.strokeData.getCoordinate(i);
-          context2.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
-        }
+      for (let i = 0; i < this.strokeData.getLength(); i++) {
+        var coordinate = this.strokeData.getCoordinate(i);
+        context2.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
       }
     }
   }
@@ -310,20 +308,12 @@ socket.on("welcome", async () => {
   socket.emit("offer", offer, roomName);
 });
 function messageHandle(event, context1, context2, canvasToDraw) {
-  console.log("messagehandlecalled");
   try {
     data = JSON.parse(event.data);
     console.log(data.type);
-    if (data.type === "draw") {
-      inputData = new GetStroke(event.data);
-      inputData.reconstructStroke(context1, context2, canvasToDraw);
-      storkeStorage.putStroke(event.data);
-    }
-    if (data.target === "erase") {
-      inputData = new GetStroke(event.data);
-      inputData.reconstructStroke(context1, context2, canvasToDraw);
-      storkeStorage.putStroke(event.data);
-    }
+    inputData = new GetStroke(event.data);
+    inputData.reconstructStroke(context1, context2, canvasToDraw);
+    storkeStorage.putStroke(event.data);
   } catch (error) {
     const image = new Image();
     image.onload = function () {
@@ -405,7 +395,6 @@ function onDraw(event) {
     }
     return;
   }
-  const coords = getCanvasCoordinates(event);
   ctx1.moveTo(coords.x, coords.y);
 }
 
@@ -424,14 +413,10 @@ function onStartPainting(event) {
 }
 
 function onStopPainting(event) {
-  if (isPainting) {
-    const coords = getCanvasCoordinates(event);
-    if (myDataChannel) {
-      myDataChannel.send(data.exportStroke());
-    }
-    storkeStorage.putStroke(data.exportStroke());
-    isPainting = false;
-  }
+  myDataChannel.send(data.exportStroke());
+  storkeStorage.putStroke(data.exportStroke());
+
+  isPainting = false;
 }
 
 function onRestore() {
