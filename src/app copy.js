@@ -24,7 +24,6 @@ pdfFileInput.addEventListener("change", async function (event) {
 function sendPdf() {
   console.log("called send pdf");
   const imageData = canvas1.toDataURL();
-  console.log(imageData);
   myDataChannel.send(imageData);
 }
 
@@ -34,7 +33,6 @@ async function loadPdf(file) {
   reader.onload = async function (e) {
     const typedArray = new Uint8Array(e.target.result);
 
-    // pdfjsLib를 사용하기 전에 전역 PDFJS.workerSrc를 설정해야 합니다.
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js";
 
@@ -47,24 +45,19 @@ async function loadPdf(file) {
         await pdf.getPage(pdfPageNumber).then(async function (page) {
           console.log("Page loaded");
 
-          // Get the viewport
           const viewport = page.getViewport({ scale: 1 });
 
-          // Create a canvas element to draw the PDF image
           const pdfCanvas = document.createElement("canvas");
           const pdfCtx = pdfCanvas.getContext("2d");
 
-          // Set canvas dimensions to match PDF page
           pdfCanvas.width = viewport.width;
           pdfCanvas.height = viewport.height;
 
-          // Render the PDF page on the canvas
           page
             .render({ canvasContext: pdfCtx, viewport: viewport })
             .promise.then(async function () {
               console.log("Page rendered");
 
-              // Draw the PDF image on canvas1
               await ctx1.drawImage(
                 pdfCanvas,
                 0,
@@ -105,8 +98,8 @@ class StrokeData {
     this.width = width;
     this.count = coordinates.length;
   }
-  coordinateInput(x, y) {
-    this.coordinateArray.push([x, y]);
+  coordinateInput(x, y, canvasWidth, canvasHeight) {
+    this.coordinateArray.push([x / canvasWidth, y / canvasHeight]);
     this.count += 1;
   }
   exportStroke() {
@@ -121,8 +114,9 @@ class StrokeData {
   getType() {
     return this.type;
   }
-  getCoordinate(i) {
-    return this.coordinateArray[i];
+  getCoordinate(i, canvasWidth, canvasHeight) {
+    const [normX, normY] = this.coordinateArray[i];
+    return [normX * canvasWidth, normY * canvasHeight];
   }
   getColor() {
     return this.color;
@@ -150,6 +144,7 @@ class GetStroke {
       console.log("parse failed");
     }
   }
+
   reconstructStroke(context1, context2, canvasToDraw) {
     console.log(this.strokeData.getType());
     if (this.strokeData.getType() == "draw") {
@@ -157,21 +152,37 @@ class GetStroke {
       context1.lineWidth = this.strokeData.getWidth();
       context1.beginPath();
       if (this.strokeData.getLength() > 0) {
-        let startCoordinate = this.strokeData.getCoordinate(0);
-        context1.moveTo(startCoordinate[0], startCoordinate[1]);
-
         for (let i = 0; i < this.strokeData.getLength(); i++) {
-          var coordinate = this.strokeData.getCoordinate(i);
-          context1.lineTo(coordinate[0], coordinate[1]);
+          const [x, y] = this.strokeData.getCoordinate(
+            i,
+            canvasToDraw.width,
+            canvasToDraw.height
+          );
+          if (i === 0) {
+            context1.moveTo(x, y);
+          } else {
+            context1.lineTo(x, y);
+          }
           context1.stroke();
         }
       }
+
+      context2.globalCompositeOperation = "destination-over";
+      context2.drawImage(
+        canvasToDraw,
+        0,
+        0,
+        canvasToDraw.width,
+        canvasToDraw.height
+      );
+      context2.globalCompositeOperation = "source-over";
+      context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
     }
 
     if (this.strokeData.getType() == "erase") {
       if (this.strokeData.getLength() > 0) {
         let startCoordinate = this.strokeData.getCoordinate(0);
-        context1.clearRect(
+        context2.clearRect(
           startCoordinate[0] - 5,
           startCoordinate[1] - 5,
           10,
@@ -180,18 +191,19 @@ class GetStroke {
 
         for (let i = 0; i < this.strokeData.getLength(); i++) {
           var coordinate = this.strokeData.getCoordinate(i);
-          context1.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
+          context2.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
         }
       }
     }
   }
+
   storeStroke(dataStorage) {
-    dataStorage.push(this.strokeData.exportStroke);
+    dataStorage.push(this.strokeData.exportStroke());
   }
 }
 let strokeStorage = new StrokeStorage();
 let isErasing = false;
-var tempData;
+var data;
 var inputData;
 
 let roomName;
@@ -212,15 +224,11 @@ ctx2.lineWidth = 5;
 ctx2.lineCap = "round";
 ctx2.strokeStyle = "black";
 
-// Set the canvas dimensions to match the window size
 canvas1.width = window.innerWidth;
 canvas1.height = window.innerHeight;
 canvas2.width = window.innerWidth;
 canvas2.height = window.innerHeight;
 
-/**
- * 현재는 1:1 실시간 반영만 우선 개발하고자 하나의 dataChannel을 운영함 만약 여러명 참여해야하는 경우 myDataChannels 로 다수의 Cahnnel을 관리해야함
- */
 let myDataChannel;
 
 const welcome = document.getElementById("welcome");
@@ -298,30 +306,23 @@ socket.on("welcome", async () => {
   console.log("sent the offer");
   socket.emit("offer", offer, roomName);
 });
+
 function messageHandle(event, context1, context2, canvasToDraw) {
   console.log("messagehandlecalled");
   try {
-    eventData = JSON.parse(event.data);
-    if (eventData.type === "draw" || eventData.type === "erase") {
+    data = JSON.parse(event.data);
+    if (data.type === "draw") {
       inputData = new GetStroke(event.data);
       inputData.reconstructStroke(context1, context2, canvasToDraw);
       strokeStorage.putStroke(event.data);
+    } else {
+      loadPdfFromData(new Uint8Array(data.data));
     }
   } catch (error) {
-    console.log("hellohelloehllo");
-    const image = new Image();
-    image.onload = function () {
-      ctx1.drawImage(image, 0, 0);
-    };
-    image.src = event.data;
+    console.log(error);
   }
 }
-/**
- * 중요!! myDataChannel 에 추가하는 myDataChannel.addEventListener 가 데이터를 주고 받는 과정에서 수신 과정에 해당함.
- * 해당 부분에서 전달 받을 수 있는 형태는 string, a Blob, an ArrayBuffer, a TypedArray or a DataView object. 임
- * 따라서 데이터를 받은 후 데이터를 정제해서 그림에 포함시키는 과정만 만들면 됨!
- * 참고 : https://developer.mozilla.org/en-US/docs/Web/API/RTCDataChannel/send
- **/
+
 socket.on("offer", async (offer) => {
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
@@ -362,6 +363,7 @@ function makeConnection() {
     ],
   });
   myPeerConnection.addEventListener("icecandidate", handleIce);
+  myPeerConnection.addEventListener("addstream", handleAddStream);
 }
 
 function handleIce(data) {
@@ -369,18 +371,28 @@ function handleIce(data) {
   socket.emit("ice", data.candidate, roomName);
 }
 
+function handleAddStream(data) {
+  console.log("got an stream from my peer");
+  const peerFace = document.getElementById("peerFace");
+  peerFace.srcObject = data.stream;
+}
+
 function getCanvasCoordinates(event) {
   const rect = canvas1.getBoundingClientRect();
-  return {
-    x: (event.clientX - rect.left) * (canvas1.width / rect.width),
-    y: (event.clientY - rect.top) * (canvas1.height / rect.height),
-  };
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  return { x, y };
 }
+
+canvas1.addEventListener("mousemove", onDraw);
+canvas1.addEventListener("mousedown", onStartPainting);
+canvas1.addEventListener("mouseup", onStopPainting);
+canvas1.addEventListener("mouseleave", onStopPainting);
 
 function onDraw(event) {
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
-    tempData.coordinateInput(coords.x, coords.y);
+    data.coordinateInput(coords.x, coords.y, canvas1.width, canvas1.height);
     if (isErasing) {
       ctx1.clearRect(coords.x - 5, coords.y - 5, 10, 10);
     } else {
@@ -400,11 +412,11 @@ function onStartPainting(event) {
     ctx1.beginPath();
     const coords = getCanvasCoordinates(event);
     if (isErasing) {
-      tempData = new StrokeData("erase", ctx1.strokeStyle, ctx1.lineWidth);
+      data = new StrokeData("erase", ctx1.strokeStyle, ctx1.lineWidth);
     } else {
-      tempData = new StrokeData("draw", ctx1.strokeStyle, ctx1.lineWidth);
+      data = new StrokeData("draw", ctx1.strokeStyle, ctx1.lineWidth);
     }
-    tempData.coordinateInput(coords.x, coords.y);
+    data.coordinateInput(coords.x, coords.y, canvas1.width, canvas1.height);
     isPainting = true;
   }
 }
@@ -412,71 +424,43 @@ function onStartPainting(event) {
 function onStopPainting(event) {
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
+    data.coordinateInput(coords.x, coords.y, canvas1.width, canvas1.height);
+
     if (myDataChannel) {
-      myDataChannel.send(tempData.exportStroke());
+      myDataChannel.send(data.exportStroke());
     }
-    strokeStorage.putStroke(tempData.exportStroke());
+
+    strokeStorage.putStroke(data.exportStroke());
     isPainting = false;
   }
 }
 
-function onRestore() {
-  strokeStorage.restore(ctx2, ctx1, canvas2);
-}
+eraseBtn.addEventListener("click", () => {
+  isErasing = true;
+  canvas1.style.cursor = "crosshair";
+  ctx1.strokeStyle = "white";
+  ctx1.globalCompositeOperation = "destination-out";
+});
 
-function onLineWidthChange(event) {
+destroyBtn.addEventListener("click", () => {
+  ctx2.clearRect(0, 0, canvas2.width, canvas2.height);
+  strokeStorage = new StrokeStorage();
+  ctx1.globalCompositeOperation = "source-over";
+  isErasing = false;
+  canvas1.style.cursor = "default";
+});
+
+linewidth.addEventListener("input", (event) => {
   ctx1.lineWidth = event.target.value;
-}
+});
 
-function onColorChange(event) {
+lineColor.addEventListener("input", (event) => {
   ctx1.strokeStyle = event.target.value;
-}
-
-function onDestroyClick() {
-  ctx1.fillStyle = "rgb(172, 172, 172)";
-  ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
-}
-
-function onEraseClick() {
-  isErasing = !isErasing;
-}
-
-canvas1.addEventListener("mousemove", onDraw);
-canvas1.addEventListener("mousedown", onStartPainting);
-canvas1.addEventListener("mouseup", onStopPainting);
-canvas1.addEventListener("mouseout", onStopPainting);
-
-canvas1.addEventListener("touchmove", (e) => {
-  const touch = e.touches[0];
-  const touchEvent = new MouseEvent("mousemove", {
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-  });
-  onDraw(touchEvent);
-  e.preventDefault();
 });
 
-canvas1.addEventListener("touchstart", (e) => {
-  const touch = e.touches[0];
-  const touchEvent = new MouseEvent("mousedown", {
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-  });
-  onStartPainting(touchEvent);
-  e.preventDefault();
+restoreBtn.addEventListener("click", () => {
+  strokeStorage.restore(ctx2, ctx1, canvas2);
 });
-
-canvas1.addEventListener("touchend", (e) => {
-  const touchEvent = new MouseEvent("mouseup", {});
-  onStopPainting(touchEvent);
-  e.preventDefault();
-});
-
-destroyBtn.addEventListener("click", onDestroyClick);
-eraseBtn.addEventListener("click", onEraseClick);
-restoreBtn.addEventListener("click", onRestore);
-linewidth.addEventListener("change", onLineWidthChange);
-lineColor.addEventListener("change", onColorChange);
 
 window.addEventListener("resize", () => {
   canvas1.width = window.innerWidth;

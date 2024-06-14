@@ -24,7 +24,6 @@ pdfFileInput.addEventListener("change", async function (event) {
 function sendPdf() {
   console.log("called send pdf");
   const imageData = canvas1.toDataURL();
-  console.log(imageData);
   myDataChannel.send(imageData);
 }
 
@@ -156,7 +155,6 @@ class GetStroke {
       context1.strokeStyle = this.strokeData.getColor();
       context1.lineWidth = this.strokeData.getWidth();
       context1.beginPath();
-
       if (this.strokeData.getLength() > 0) {
         let startCoordinate = this.strokeData.getCoordinate(0);
         context1.moveTo(startCoordinate[0], startCoordinate[1]);
@@ -168,7 +166,7 @@ class GetStroke {
         }
       }
 
-      context2.globalCompositeOperation = "destination-over"; // 이미지가 뒤에 위치하도록 설정
+      context2.globalCompositeOperation = "source-over"; // 이미지가 뒤에 위치하도록 설정
       context2.drawImage(
         canvasToDraw,
         0,
@@ -178,7 +176,6 @@ class GetStroke {
       );
       context2.globalCompositeOperation = "source-over"; // 기본값으로 복원
       context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
-      console.log("finished");
     }
 
     if (this.strokeData.getType() == "erase") {
@@ -204,7 +201,7 @@ class GetStroke {
 }
 let storkeStorage = new StorkeStorage();
 let isErasing = false;
-var tempData;
+var data;
 var inputData;
 
 let roomName;
@@ -314,8 +311,8 @@ socket.on("welcome", async () => {
 function messageHandle(event, context1, context2, canvasToDraw) {
   console.log("messagehandlecalled");
   try {
-    eventData = JSON.parse(event.data);
-    if (eventData.type === "draw") {
+    data = JSON.parse(event.data);
+    if (data.type === "draw") {
       inputData = new GetStroke(event.data);
       inputData.reconstructStroke(context1, context2, canvasToDraw);
       storkeStorage.putStroke(event.data);
@@ -393,17 +390,15 @@ function getCanvasCoordinates(event) {
 function onDraw(event) {
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
-    tempData.coordinateInput(coords.x, coords.y);
+    data.coordinateInput(coords.x, coords.y);
     if (isErasing) {
       ctx1.clearRect(coords.x - 5, coords.y - 5, 10, 10);
     } else {
       ctx1.lineTo(coords.x, coords.y);
       ctx1.stroke();
     }
-
     return;
   }
-
   const coords = getCanvasCoordinates(event);
   ctx1.moveTo(coords.x, coords.y);
 }
@@ -413,11 +408,11 @@ function onStartPainting(event) {
     ctx1.beginPath();
     const coords = getCanvasCoordinates(event);
     if (isErasing) {
-      tempData = new StrokeData("erase", ctx1.strokeStyle, ctx1.lineWidth);
+      data = new StrokeData("erase", ctx1.strokeStyle, ctx1.lineWidth);
     } else {
-      tempData = new StrokeData("draw", ctx1.strokeStyle, ctx1.lineWidth);
+      data = new StrokeData("draw", ctx1.strokeStyle, ctx1.lineWidth);
     }
-    tempData.coordinateInput(coords.x, coords.y);
+    data.coordinateInput(coords.x, coords.y);
     isPainting = true;
   }
 }
@@ -426,9 +421,9 @@ function onStopPainting(event) {
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
     if (myDataChannel) {
-      myDataChannel.send(tempData.exportStroke());
+      myDataChannel.send(data.exportStroke());
     }
-    storkeStorage.putStroke(tempData.exportStroke());
+    storkeStorage.putStroke(data.exportStroke());
     isPainting = false;
   }
 }
@@ -490,10 +485,3 @@ eraseBtn.addEventListener("click", onEraseClick);
 restoreBtn.addEventListener("click", onRestore);
 linewidth.addEventListener("change", onLineWidthChange);
 lineColor.addEventListener("change", onColorChange);
-
-window.addEventListener("resize", () => {
-  canvas1.width = window.innerWidth;
-  canvas1.height = window.innerHeight;
-  canvas2.width = window.innerWidth;
-  canvas2.height = window.innerHeight;
-});
