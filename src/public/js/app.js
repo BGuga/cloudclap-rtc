@@ -137,7 +137,6 @@ class GetStroke {
   constructor(receivedStrokeData = "") {
     try {
       var parsedStrokeData = JSON.parse(receivedStrokeData);
-      console.log(parsedStrokeData);
       this.strokeData = new StrokeData(
         parsedStrokeData.type,
         parsedStrokeData.color,
@@ -317,8 +316,12 @@ function messageHandle(event, context1, context2, canvasToDraw) {
       inputData.reconstructStroke(context1, context2, canvasToDraw);
       storkeStorage.putStroke(event.data);
     }
+    if (data.target === "erase") {
+      inputData = new GetStroke(event.data);
+      inputData.reconstructStroke(context1, context2, canvasToDraw);
+      storkeStorage.putStroke(event.data);
+    }
   } catch (error) {
-    console.log("hellohelloehllo");
     const image = new Image();
     image.onload = function () {
       ctx1.drawImage(image, 0, 0);
