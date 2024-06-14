@@ -178,19 +178,21 @@ class GetStroke {
       context1.clearRect(0, 0, canvasToDraw.width, canvasToDraw.height);
     }
 
-    console.log("called erase");
-    if (this.strokeData.getLength() > 0) {
-      let startCoordinate = this.strokeData.getCoordinate(0);
-      context2.clearRect(
-        startCoordinate[0] - 5,
-        startCoordinate[1] - 5,
-        10,
-        10
-      );
+    if (this.strokeData.getType() == "erase") {
+      console.log("called erase");
+      if (this.strokeData.getLength() > 0) {
+        let startCoordinate = this.strokeData.getCoordinate(0);
+        context2.clearRect(
+          startCoordinate[0] - 5,
+          startCoordinate[1] - 5,
+          10,
+          10
+        );
 
-      for (let i = 0; i < this.strokeData.getLength(); i++) {
-        var coordinate = this.strokeData.getCoordinate(i);
-        context2.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
+        for (let i = 0; i < this.strokeData.getLength(); i++) {
+          var coordinate = this.strokeData.getCoordinate(i);
+          context2.clearRect(coordinate[0] - 5, coordinate[1] - 5, 10, 10);
+        }
       }
     }
   }
