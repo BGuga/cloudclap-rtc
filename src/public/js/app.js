@@ -151,6 +151,7 @@ class GetStroke {
   reconstructStroke(context1, context2, canvasToDraw) {
     console.log(this.strokeData.getType());
     if (this.strokeData.getType() == "draw") {
+      console.log("Draw called");
       context1.strokeStyle = this.strokeData.getColor();
       context1.lineWidth = this.strokeData.getWidth();
       context1.beginPath();
@@ -178,6 +179,7 @@ class GetStroke {
     }
 
     if (this.strokeData.getType() == "erase") {
+      console.log("called erase");
       if (this.strokeData.getLength() > 0) {
         let startCoordinate = this.strokeData.getCoordinate(0);
         context2.clearRect(
