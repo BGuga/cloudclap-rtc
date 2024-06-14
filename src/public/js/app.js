@@ -313,6 +313,7 @@ function messageHandle(event, context1, context2, canvasToDraw) {
   console.log("messagehandlecalled");
   try {
     data = JSON.parse(event.data);
+    console.log(data.type);
     if (data.type === "draw") {
       inputData = new GetStroke(event.data);
       inputData.reconstructStroke(context1, context2, canvasToDraw);
