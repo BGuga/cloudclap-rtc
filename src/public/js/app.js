@@ -352,7 +352,7 @@ function messageHandle(event, context1, context2, canvasToDraw) {
   } catch (error) {
     const image = new Image();
     image.onload = function () {
-      ctx1.drawImage(image, 0, 0, 570, 380);
+      ctx1.drawImage(image, 0, 0, 1000, 600);
     };
     image.src = event.data;
   }
