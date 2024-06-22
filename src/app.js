@@ -7,6 +7,9 @@ const linewidth = document.getElementById("linewidth");
 const restoreBtn = document.getElementById("restore_btn");
 const lineColor = document.getElementById("lineColor");
 const pdfFileInput = document.getElementById("pdf-file");
+
+// Existing code...
+
 const saveCombinedBtn = document.getElementById("save-combined-btn");
 
 function saveCombinedCanvasAsImage() {
@@ -38,8 +41,10 @@ function saveCombinedCanvasAsImage() {
   document.body.removeChild(link);
 }
 
+// Add an event listener to the save combined button
 saveCombinedBtn.addEventListener("click", saveCombinedCanvasAsImage);
 
+// Remaining code...
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -66,11 +71,10 @@ async function loadPdf(file) {
   reader.onload = async function (e) {
     const typedArray = new Uint8Array(e.target.result);
 
-    // Set worker source for pdf.js
+    // pdfjsLib를 사용하기 전에 전역 PDFJS.workerSrc를 설정해야 합니다.
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js";
 
-    // Load PDF document using pdf.js
     pdfjsLib
       .getDocument(typedArray)
       .promise.then(async function (pdf) {
@@ -120,11 +124,9 @@ class StrokeStorage {
   constructor() {
     this.strokes = [];
   }
-
   putStroke(stroke) {
     this.strokes.push(stroke);
   }
-
   restore(ctx2, ctx1, canvas2) {
     for (let i = 0; i < this.strokes.length; i++) {
       var strokeToRestore = new GetStroke(this.strokes[i]);
@@ -132,7 +134,6 @@ class StrokeStorage {
     }
   }
 }
-
 class StrokeData {
   constructor(type = "none", color = "black", width = 5, coordinates = []) {
     this.coordinateArray = coordinates;
@@ -141,12 +142,10 @@ class StrokeData {
     this.width = width;
     this.count = coordinates.length;
   }
-
   coordinateInput(x, y) {
     this.coordinateArray.push([x, y]);
     this.count += 1;
   }
-
   exportStroke() {
     var data = {
       type: this.type,
@@ -156,28 +155,22 @@ class StrokeData {
     };
     return JSON.stringify(data);
   }
-
   getType() {
     return this.type;
   }
-
   getCoordinate(i) {
     return this.coordinateArray[i];
   }
-
   getColor() {
     return this.color;
   }
-
   getWidth() {
     return this.width;
   }
-
   getLength() {
     return this.count;
   }
 }
-
 class GetStroke {
   constructor(receivedStrokeData = "") {
     try {
@@ -194,7 +187,6 @@ class GetStroke {
       console.log("parse failed");
     }
   }
-
   reconstructStroke(context1, context2, canvasToDraw) {
     console.log(this.strokeData.getType());
     if (this.strokeData.getType() == "draw") {
@@ -230,27 +222,25 @@ class GetStroke {
       }
     }
   }
-
   storeStroke(dataStorage) {
     dataStorage.push(this.strokeData.exportStroke);
   }
 }
-
 let strokeStorage = new StrokeStorage();
 let isErasing = false;
-let isPainting = false;
 var tempData;
 var inputData;
 
 let roomName;
 let myPeerConnection;
-let myDataChannel;
 
 const canvas1 = document.getElementById("canvas1");
 const canvas2 = document.getElementById("canvas2");
 
 const ctx1 = canvas1.getContext("2d");
 const ctx2 = canvas2.getContext("2d");
+
+let isPainting = false;
 
 ctx1.lineWidth = 5;
 ctx1.lineCap = "round";
@@ -264,6 +254,14 @@ canvas1.width = window.innerWidth;
 canvas1.height = window.innerHeight;
 canvas2.width = window.innerWidth;
 canvas2.height = window.innerHeight;
+
+/**
+ * 현재는 1:1 실시간 반영만 우선 개발하고자 하나의 dataChannel을 운영함 만약 여러명 참여해야하는 경우 myDataChannels 로 다수의 Cahnnel을 관리해야함
+ */
+let myDataChannel;
+
+const welcome = document.getElementById("welcome");
+const welcomeForm = welcome.querySelector("form");
 
 async function initCall() {
   welcome.hidden = true;
@@ -279,10 +277,64 @@ async function handleWelcomeSubmit(event) {
   input.value = "";
 }
 
-const welcome = document.getElementById("welcome");
-const welcomeForm = welcome.querySelector("form");
 welcomeForm.addEventListener("submit", handleWelcomeSubmit);
 
+function loadPdfFromData(typedArray) {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.9.359/pdf.worker.min.js";
+
+  pdfjsLib
+    .getDocument(typedArray)
+    .promise.then(function (pdf) {
+      console.log("PDF loaded");
+      const pdfPageNumber = 1;
+
+      pdf.getPage(pdfPageNumber).then(function (page) {
+        console.log("Page loaded");
+
+        let viewport = page.getViewport({ scale: 1 });
+        const scale = canvas1.height / viewport.height;
+        viewport = page.getViewport({ scale: scale });
+
+        canvas1.width = window.innerWidth;
+        canvas1.height = window.innerHeight;
+
+        ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
+
+        var renderContext = {
+          canvasContext: ctx1,
+          viewport: viewport,
+          transform: [
+            scale,
+            0,
+            0,
+            scale,
+            (canvas1.width - viewport.width * scale) / 2,
+            (canvas1.height - viewport.height * scale) / 2,
+          ],
+        };
+
+        page.render(renderContext).promise.then(function () {
+          console.log("Page rendered");
+        });
+      });
+    })
+    .catch(function (error) {
+      console.error("Error loading PDF: ", error);
+    });
+}
+
+socket.on("welcome", async () => {
+  myDataChannel = myPeerConnection.createDataChannel("chat");
+  myDataChannel.addEventListener("message", (event) =>
+    messageHandle(event, ctx2, ctx1, canvas2)
+  );
+  console.log("made data channel");
+  const offer = await myPeerConnection.createOffer();
+  myPeerConnection.setLocalDescription(offer);
+  console.log("sent the offer");
+  socket.emit("offer", offer, roomName);
+});
 function messageHandle(event, context1, context2, canvasToDraw) {
   console.log("messagehandlecalled");
   try {
@@ -301,19 +353,12 @@ function messageHandle(event, context1, context2, canvasToDraw) {
     image.src = event.data;
   }
 }
-
-socket.on("welcome", async () => {
-  myDataChannel = myPeerConnection.createDataChannel("chat");
-  myDataChannel.addEventListener("message", (event) =>
-    messageHandle(event, ctx2, ctx1, canvas2)
-  );
-  console.log("made data channel");
-  const offer = await myPeerConnection.createOffer();
-  myPeerConnection.setLocalDescription(offer);
-  console.log("sent the offer");
-  socket.emit("offer", offer, roomName);
-});
-
+/**
+ * 중요!! myDataChannel 에 추가하는 myDataChannel.addEventListener 가 데이터를 주고 받는 과정에서 수신 과정에 해당함.
+ * 해당 부분에서 전달 받을 수 있는 형태는 string, a Blob, an ArrayBuffer, a TypedArray or a DataView object. 임
+ * 따라서 데이터를 받은 후 데이터를 정제해서 그림에 포함시키는 과정만 만들면 됨!
+ * 참고 : https://developer.mozilla.org/en-US/docs/Web/API/RTCDataChannel/send
+ **/
 socket.on("offer", async (offer) => {
   myPeerConnection.addEventListener("datachannel", (event) => {
     myDataChannel = event.channel;
@@ -321,92 +366,57 @@ socket.on("offer", async (offer) => {
       messageHandle(event, ctx2, ctx1, canvas2)
     );
   });
-  console.log("received offer");
-  await myPeerConnection.setRemoteDescription(offer);
+  console.log("received the offer");
+  myPeerConnection.setRemoteDescription(offer);
   const answer = await myPeerConnection.createAnswer();
-  await myPeerConnection.setLocalDescription(answer);
+  myPeerConnection.setLocalDescription(answer);
   socket.emit("answer", answer, roomName);
+  console.log("sent the answer");
 });
 
 socket.on("answer", (answer) => {
+  console.log("received the answer");
   myPeerConnection.setRemoteDescription(answer);
 });
 
-let message = "  has left the room";
-socket.on("disconnected", (event) => {
-  socket.emit("welcomed");
+socket.on("ice", (ice) => {
+  console.log("received candidate");
+  myPeerConnection.addIceCandidate(ice);
 });
-
-destroyBtn.addEventListener("click", destroyConnection);
-eraseBtn.addEventListener("click", eraseDrawing);
-restoreBtn.addEventListener("click", restoreDrawing);
-
-linewidth.addEventListener("input", (event) => {
-  const value = event.target.value;
-  ctx1.lineWidth = value;
-  ctx2.lineWidth = value;
-});
-
-lineColor.addEventListener("input", (event) => {
-  const value = event.target.value;
-  ctx1.strokeStyle = value;
-  ctx2.strokeStyle = value;
-});
-
-function eraseDrawing() {
-  isErasing = !isErasing;
-  if (isErasing) {
-    eraseBtn.innerText = "Stop Erasing";
-  } else {
-    eraseBtn.innerText = "Start Erasing";
-  }
-}
-
-function restoreDrawing() {
-  ctx1.clearRect(0, 0, canvas1.width, canvas1.height);
-  strokeStorage.restore(ctx2, ctx1, canvas2);
-}
 
 function makeConnection() {
-  myPeerConnection = new RTCPeerConnection();
-  myPeerConnection.addEventListener("icecandidate", handleIceCandidate);
-  myPeerConnection.addEventListener("iceconnectionstatechange", () =>
-    console.log(myPeerConnection.iceConnectionState)
-  );
-  myPeerConnection.addEventListener("datachannel", receiveDataChannel);
+  myPeerConnection = new RTCPeerConnection({
+    iceServers: [
+      {
+        urls: [
+          "stun:stun.l.google.com:19302",
+          "stun:stun1.l.google.com:19302",
+          "stun:stun2.l.google.com:19302",
+          "stun:stun3.l.google.com:19302",
+          "stun:stun4.l.google.com:19302",
+        ],
+      },
+    ],
+  });
+  myPeerConnection.addEventListener("icecandidate", handleIce);
 }
 
-function handleIceCandidate(event) {
-  console.log("ice candidate");
-  socket.emit("candidate", event.candidate, roomName);
+function handleIce(data) {
+  console.log("sent candidate");
+  socket.emit("ice", data.candidate, roomName);
 }
-
-function receiveDataChannel(event) {
-  console.log("data channel received");
-  myDataChannel = event.channel;
-  myDataChannel.addEventListener("message", (event) =>
-    messageHandle(event, ctx2, ctx1, canvas2)
-  );
-}
-
-function destroyConnection() {
-  myPeerConnection.close();
-  console.log("destroyed");
-}
-
-canvas1.addEventListener("mousedown", onStartPainting);
-canvas1.addEventListener("mouseup", onStopPainting);
-canvas1.addEventListener("mouseleave", onStopPainting);
 
 function getCanvasCoordinates(event) {
   const rect = canvas1.getBoundingClientRect();
   return {
-    x: event.clientX - rect.left,
-    y: event.clientY - rect.top,
+    x: (event.clientX - rect.left) * (canvas1.width / rect.width),
+    y: (event.clientY - rect.top) * (canvas1.height / rect.height),
   };
 }
 
 function onDraw(event) {
+  console.log("hihihih");
+  console.log(isPainting);
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
     tempData.coordinateInput(coords.x, coords.y);
@@ -416,12 +426,16 @@ function onDraw(event) {
       ctx1.lineTo(coords.x, coords.y);
       ctx1.stroke();
     }
+
+    return;
   }
+
+  const coords = getCanvasCoordinates(event);
+  ctx1.moveTo(coords.x, coords.y);
 }
 
-canvas1.addEventListener("mousemove", onDraw);
-
 function onStartPainting(event) {
+  console.log("called");
   if (!isPainting) {
     ctx1.beginPath();
     const coords = getCanvasCoordinates(event);
@@ -436,6 +450,7 @@ function onStartPainting(event) {
 }
 
 function onStopPainting(event) {
+  console.log("called2");
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
     if (myDataChannel) {
@@ -445,3 +460,68 @@ function onStopPainting(event) {
     isPainting = false;
   }
 }
+
+function onRestore() {
+  strokeStorage.restore(ctx2, ctx1, canvas2);
+}
+
+function onLineWidthChange(event) {
+  ctx1.lineWidth = event.target.value;
+}
+
+function onColorChange(event) {
+  ctx1.strokeStyle = event.target.value;
+}
+
+function onDestroyClick() {
+  ctx1.fillStyle = "rgb(172, 172, 172)";
+  ctx1.fillRect(0, 0, canvas1.width, canvas1.height);
+}
+
+function onEraseClick() {
+  isErasing = !isErasing;
+}
+
+canvas1.addEventListener("mousemove", onDraw);
+canvas1.addEventListener("mousedown", onStartPainting);
+canvas1.addEventListener("mouseup", onStopPainting);
+canvas1.addEventListener("mouseout", onStopPainting);
+
+canvas1.addEventListener("touchmove", (e) => {
+  const touch = e.touches[0];
+  const touchEvent = new MouseEvent("mousemove", {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  });
+  onDraw(touchEvent);
+  e.preventDefault();
+});
+
+canvas1.addEventListener("touchstart", (e) => {
+  const touch = e.touches[0];
+  const touchEvent = new MouseEvent("mousedown", {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+  });
+  onStartPainting(touchEvent);
+  e.preventDefault();
+});
+
+canvas1.addEventListener("touchend", (e) => {
+  const touchEvent = new MouseEvent("mouseup", {});
+  onStopPainting(touchEvent);
+  e.preventDefault();
+});
+
+destroyBtn.addEventListener("click", onDestroyClick);
+eraseBtn.addEventListener("click", onEraseClick);
+restoreBtn.addEventListener("click", onRestore);
+linewidth.addEventListener("change", onLineWidthChange);
+lineColor.addEventListener("change", onColorChange);
+
+window.addEventListener("resize", () => {
+  canvas1.width = window.innerWidth;
+  canvas1.height = window.innerHeight;
+  canvas2.width = window.innerWidth;
+  canvas2.height = window.innerHeight;
+});

@@ -422,6 +422,7 @@ function getCanvasCoordinates(event) {
 }
 
 function onDraw(event) {
+  console.log(isPainting);
   if (isPainting) {
     const coords = getCanvasCoordinates(event);
     data.coordinateInput(coords.x, coords.y);
@@ -451,10 +452,10 @@ function onStartPainting(event) {
 }
 
 function onStopPainting(event) {
+  console.log("hihihihih");
+  isPainting = false;
   myDataChannel.send(data.exportStroke());
   storkeStorage.putStroke(data.exportStroke());
-
-  isPainting = false;
 }
 
 function onRestore() {
