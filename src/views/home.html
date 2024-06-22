@@ -18,6 +18,7 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        font-size: 8px; /* Reduced font size */
       }
       #canvas-container {
         position: relative;
@@ -42,32 +43,53 @@
         left: 50%;
         transform: translateX(-50%);
         background: rgba(255, 255, 255, 0.7);
-        width: 20vw; /* 20% of the viewport width */
-        height: 20vh; /* 20% of the viewport height */
+        width: 25vw; /* 20% of the viewport width */
+        height: 25vh; /* 20% of the viewport height */
         max-width: 300px; /* Optional: to prevent it from being too large on large screens */
         max-height: 200px; /* Optional: to prevent it from being too large on large screens */
         padding: 10px;
         border-radius: 10px;
-        font-size: 12px;
+        font-size: 8px; /* Reduced font size */
         display: flex;
         flex-direction: column;
-        justify-content: center;
+        justify-content: space-between;
         align-items: center;
+        box-sizing: border-box;
       }
       .overlay input,
       .overlay button {
-        font-size: 12px;
+        font-size: 8px; /* Reduced font size */
         padding: 5px;
         margin: 2px 0;
+        width: 100%; /* Make inputs and buttons take the full width */
+        box-sizing: border-box; /* Ensure padding is included in width calculation */
+      }
+      .btns {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
       }
       .btns span {
-        font-size: 12px;
+        font-size: 8px; /* Reduced font size */
+        margin-bottom: 5px;
       }
-      .btns input,
+      .btns input[type="range"],
       .btns button {
-        font-size: 12px;
+        font-size: 8px; /* Reduced font size */
         padding: 5px;
         margin: 2px 0;
+        box-sizing: border-box; /* Ensure padding is included in width calculation */
+      }
+      .button-group {
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
+      }
+      .button-group button {
+        width: 24%; /* Four buttons should take 24% each, accounting for some spacing */
+        font-size: 8px; /* Reduced font size */
+        box-sizing: border-box;
       }
     </style>
   </head>
@@ -85,9 +107,9 @@
             <button>Enter room</button>
           </form>
         </div>
-        <div class="btns">
-          <span>Pencil Width</span>
-          <input type="range" id="linewidth" min="1" max="10" value="5" />
+        <span>Pencil Width</span>
+        <input type="range" id="linewidth" min="1" max="10" value="5" />
+        <div class="button-group">
           <button id="save-combined-btn">Save Combined Image</button>
           <button id="destroy-btn">Destroy</button>
           <button id="erase-btn">Erase</button>
