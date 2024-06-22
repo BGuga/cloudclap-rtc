@@ -42,8 +42,32 @@
         left: 50%;
         transform: translateX(-50%);
         background: rgba(255, 255, 255, 0.7);
+        width: 20vw; /* 20% of the viewport width */
+        height: 20vh; /* 20% of the viewport height */
+        max-width: 300px; /* Optional: to prevent it from being too large on large screens */
+        max-height: 200px; /* Optional: to prevent it from being too large on large screens */
         padding: 10px;
         border-radius: 10px;
+        font-size: 12px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .overlay input,
+      .overlay button {
+        font-size: 12px;
+        padding: 5px;
+        margin: 2px 0;
+      }
+      .btns span {
+        font-size: 12px;
+      }
+      .btns input,
+      .btns button {
+        font-size: 12px;
+        padding: 5px;
+        margin: 2px 0;
       }
     </style>
   </head>
