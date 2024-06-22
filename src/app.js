@@ -150,22 +150,23 @@ class GetStroke {
       console.log("parse failed");
     }
   }
-  reconstructStroke(context1, context2, canvasToDraw) {
-    console.log(this.strokeData.getType());
+  reconstructStroke(context1, context2) {
     if (this.strokeData.getType() == "draw") {
-      context1.strokeStyle = this.strokeData.getColor();
-      context1.lineWidth = this.strokeData.getWidth();
-      context1.beginPath();
+      context2.strokeStyle = this.strokeData.getColor();
+      context2.lineWidth = this.strokeData.getWidth();
+      context2.beginPath();
       if (this.strokeData.getLength() > 0) {
         let startCoordinate = this.strokeData.getCoordinate(0);
-        context1.moveTo(startCoordinate[0], startCoordinate[1]);
+        context2.moveTo(startCoordinate[0], startCoordinate[1]);
 
         for (let i = 0; i < this.strokeData.getLength(); i++) {
           var coordinate = this.strokeData.getCoordinate(i);
-          context1.lineTo(coordinate[0], coordinate[1]);
-          context1.stroke();
+          context2.lineTo(coordinate[0], coordinate[1]);
+          context2.stroke();
         }
       }
+      context1.drawImage(context2.canvas, 0, 0);
+      return;
     }
 
     if (this.strokeData.getType() == "erase") {
@@ -308,7 +309,6 @@ function messageHandle(event, context1, context2, canvasToDraw) {
       strokeStorage.putStroke(event.data);
     }
   } catch (error) {
-    console.log("hellohelloehllo");
     const image = new Image();
     image.onload = function () {
       ctx1.drawImage(image, 0, 0);
