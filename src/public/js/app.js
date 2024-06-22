@@ -7,6 +7,39 @@ const linewidth = document.getElementById("linewidth");
 const restoreBtn = document.getElementById("restore_btn");
 const lineColor = document.getElementById("lineColor");
 const pdfFileInput = document.getElementById("pdf-file");
+const saveCombinedBtn = document.getElementById("save-combined-btn");
+
+function saveCombinedCanvasAsImage() {
+  // Create a new canvas to combine canvas1 and canvas2
+  const combinedCanvas = document.createElement("canvas");
+  combinedCanvas.width = canvas1.width;
+  combinedCanvas.height = canvas1.height;
+  const combinedCtx = combinedCanvas.getContext("2d");
+
+  // Draw canvas1 onto the combined canvas
+  combinedCtx.drawImage(canvas1, 0, 0);
+
+  // Draw canvas2 onto the combined canvas
+  combinedCtx.drawImage(canvas2, 0, 0);
+
+  // Convert the combined canvas to a data URL
+  const dataURL = combinedCanvas.toDataURL("image/png");
+
+  // Create a temporary link element
+  const link = document.createElement("a");
+  link.href = dataURL;
+  link.download = "combined_canvas_image.png";
+
+  // Trigger the download by clicking the link
+  document.body.appendChild(link);
+  link.click();
+
+  // Remove the link element from the DOM
+  document.body.removeChild(link);
+}
+
+// Add an event listener to the save button
+saveCombinedBtn.addEventListener("click", saveCombinedCanvasAsImage);
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -415,10 +448,9 @@ function onStartPainting(event) {
 }
 
 function onStopPainting(event) {
+  isPainting = false;
   myDataChannel.send(data.exportStroke());
   storkeStorage.putStroke(data.exportStroke());
-
-  isPainting = false;
 }
 
 function onRestore() {
