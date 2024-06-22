@@ -1,4 +1,4 @@
-const socket = io("https://cloudclap.r-e.kr/", {
+const socket = io("http://52.78.162.153:3000/", {
   withCredentials: true,
 });
 const destroyBtn = document.getElementById("destroy-btn");
