@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebRTC JSON Communication</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
+  </head>
+  <body>
+    <h1>WebRTC JSON Communication</h1>
+    <div id="welcome">
+      <form>
+        <input placeholder="room name" required type="text" />
+        <button>Join Room</button>
+      </form>
+    </div>
+    <div id="controls" hidden>
+      <button id="send-json-btn">Send JSON</button>
+      <textarea id="json-input" placeholder="Enter JSON here"></textarea>
+      <pre id="json-output"></pre>
+    </div>
+    <script src="/public/js/app.js"></script>
+  </body>
+</html>
